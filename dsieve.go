@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -82,6 +83,27 @@ func parseUrl(rawUrl string, lMin, lMax int) []string {
 	}
 
 	domainLevels := strings.Split(u.Host, ".")
+
+	suffixes := make([]string, 0)
+	eTLD, icann := publicsuffix.PublicSuffix(u.Host)
+	if icann {
+		if eTLD != u.Host {
+			suffixes = append(suffixes, eTLD)
+		}
+
+	}
+	
+
+	if len(suffixes) > 0 {
+		sort.Slice(suffixes, func(i, j int) bool {
+			return len(suffixes[i]) > len(suffixes[j])
+		})
+		tld := suffixes[0]
+		tldLength := strings.Count(tld, ".") + 1
+		domainLevels = domainLevels[:len(domainLevels)-tldLength]
+		domainLevels = append(domainLevels, tld)
+	}
+	
 	if lMin > len(domainLevels) {
 		return domains
 	}
