@@ -88,7 +88,6 @@ func parseUrl(rawUrl string, lMin, lMax int) []string {
 	suffixes := make([]string, 0)
 	for _, tld := range tlds {
 		if strings.HasSuffix(u.Host, tld) {
-			fmt.Println(tld)
 			suffixes = append(suffixes, tld)
 		}
 	}
