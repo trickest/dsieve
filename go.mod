@@ -1,4 +1,4 @@
-module dsieve
+module github.com/trickest/dsieve
 
 go 1.18
 
