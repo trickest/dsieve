@@ -231,10 +231,24 @@ func main() {
 		}
 
 		if strings.Contains(*filterLevel, ":") {
+			if strings.HasSuffix(*filterLevel, ":") {
+				lvl, err := strconv.Atoi(strings.TrimSuffix(*filterLevel, ":"))
+				if err != nil {
+					check(err)
+				}
+				maxLevel = lvl
+			} else {
+				split := strings.Split(*filterLevel, ":")
+				lvl, err := strconv.Atoi(split[len(split)-1])
+				if err != nil {
+					check(err)
+				}
+				maxLevel = lvl - 1
+			}
 			filteredDomains := make([]string, 0)
 			for _, inputURL := range inputUrls {
 				for _, d := range topDomainsPerLevelFiltered[maxLevel] {
-					if strings.Contains(inputURL, d) {
+					if strings.HasSuffix(inputURL, d) {
 						filteredDomains = append(filteredDomains, inputURL)
 						fmt.Println(inputURL)
 					}
