@@ -230,16 +230,23 @@ func main() {
 			}
 		}
 
-		filteredDomains := make([]string, 0)
-		for _, inputURL := range inputUrls {
-			for _, d := range topDomainsPerLevelFiltered[maxLevel] {
-				if strings.Contains(inputURL, d) {
-					filteredDomains = append(filteredDomains, inputURL)
-					fmt.Println(inputURL)
+		if strings.Contains(*filterLevel, ":") {
+			filteredDomains := make([]string, 0)
+			for _, inputURL := range inputUrls {
+				for _, d := range topDomainsPerLevelFiltered[maxLevel] {
+					if strings.Contains(inputURL, d) {
+						filteredDomains = append(filteredDomains, inputURL)
+						fmt.Println(inputURL)
+					}
 				}
 			}
+			domains = filteredDomains
+		} else {
+			for _, d := range topDomainsPerLevelFiltered[maxLevel] {
+				fmt.Println(d)
+			}
+			domains = topDomainsPerLevelFiltered[maxLevel]
 		}
-		domains = filteredDomains
 	}
 
 	if *outputFilePath != "" && len(domains) > 0 {
