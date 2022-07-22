@@ -13,11 +13,16 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-var inputUrl *string
-var inputFilePath *string
-var filterLevel *string
-var outputFilePath *string
-var filterTLD *bool
+var (
+	inputUrl                   *string
+	inputFilePath              *string
+	filterLevel                *string
+	outputFilePath             *string
+	filterTLD                  *bool
+	top                        *int
+	topDomainsPerLevel         = make(map[int]*map[string]int)
+	topDomainsPerLevelFiltered = make(map[int][]string)
+)
 
 func fail(text string) {
 	fmt.Println(text)
@@ -90,9 +95,7 @@ func parseUrl(rawUrl string, lMin, lMax int) []string {
 		if eTLD != u.Host {
 			suffixes = append(suffixes, eTLD)
 		}
-
 	}
-	
 
 	if len(suffixes) > 0 {
 		sort.Slice(suffixes, func(i, j int) bool {
@@ -103,20 +106,27 @@ func parseUrl(rawUrl string, lMin, lMax int) []string {
 		domainLevels = domainLevels[:len(domainLevels)-tldLength]
 		domainLevels = append(domainLevels, tld)
 	}
-	
-	if lMin > len(domainLevels) {
-		return domains
-	}
 
-	if lMax == -1 || lMax > len(domainLevels) {
-		lMax = len(domainLevels)
-	}
-	for i := lMax - 1; i > 0 && i >= lMin; i-- {
-		domain := strings.Join(domainLevels[len(domainLevels)-i:], ".")
-		if domain != "" {
-			domains = append(domains, domain)
+	if lMin <= len(domainLevels) {
+		if lMax == -1 || lMax > len(domainLevels) {
+			lMax = len(domainLevels)
+		}
+		for i := lMax - 1; i > 0 && i >= lMin; i-- {
+			domain := strings.Join(domainLevels[len(domainLevels)-i:], ".")
+			if domain != "" {
+				domains = append(domains, domain)
+				if *top > 0 {
+					if topDomainsPerLevel[i] == nil {
+						levelMap := make(map[string]int)
+						topDomainsPerLevel[i] = &levelMap
+					}
+					levelMap := topDomainsPerLevel[i]
+					(*levelMap)[domain] = (*levelMap)[domain] + 1
+				}
+			}
 		}
 	}
+
 	return domains
 }
 
@@ -130,9 +140,14 @@ func main() {
 		"  \033[3m-f 2:4\033[0m    baz.tld, bar.baz.tld\n"+
 		"  \033[3m-f :3 \033[0m    tld, baz.tld")
 	outputFilePath = flag.String("o", "", "Output file path, optional")
-	filterTLD = flag.Bool("t", true, "Filter invalid domains according to Mozilla's publicsuffix list.")
+	//filterTLD = flag.Bool("t", true, "Filter invalid domains according to Mozilla's publicsuffix list.")
+	top = flag.Int("top", 0, "Only consider top X subdomains of a certain level and return all their subdomains")
 
 	flag.Parse()
+
+	// set filterTLD to true by default while removing the flag
+	t := true
+	filterTLD = &t
 
 	inputUrls := make([]string, 0)
 	if *inputUrl != "" {
@@ -157,26 +172,98 @@ func main() {
 	lMin, lMax := parseFilter(*filterLevel)
 	domainMap := make(map[string]bool)
 	domains := make([]string, 0)
-	for _, inputUrl := range inputUrls {
-		for _, domain := range parseUrl(inputUrl, lMin, lMax) {
+	for _, inputURL := range inputUrls {
+		for _, domain := range parseUrl(inputURL, lMin, lMax) {
 			if _, dup := domainMap[domain]; !dup {
 				eTLD, icann := publicsuffix.PublicSuffix(domain)
 				if *filterTLD {
 					if icann {
 						if eTLD != domain {
-							fmt.Println(domain)
+							if *top == 0 {
+								fmt.Println(domain)
+							}
 							domainMap[domain] = true
 							domains = append(domains, domain)
 						}
-
 					}
 				} else {
-					fmt.Println(domain)
+					if *top == 0 {
+						fmt.Println(domain)
+					}
 					domainMap[domain] = true
 					domains = append(domains, domain)
 				}
-
 			}
+		}
+	}
+
+	if *top > 0 {
+		if lMax < 0 {
+			for lvl := range topDomainsPerLevel {
+				if lvl > lMax {
+					lMax = lvl
+				}
+			}
+		}
+		for i := lMax; i > 0 && i >= lMin; i-- {
+			domainsForLevel := make([]string, 0)
+			levelMap := topDomainsPerLevel[i]
+			if levelMap == nil {
+				continue
+			}
+			for _, domain := range domains {
+				if _, ok := (*levelMap)[domain]; ok {
+					domainsForLevel = append(domainsForLevel, domain)
+				}
+			}
+			if len(domainsForLevel) > 0 {
+				sort.Slice(domainsForLevel, func(i, j int) bool {
+					return (*levelMap)[domainsForLevel[i]] > (*levelMap)[domainsForLevel[j]]
+				})
+				if len(domainsForLevel) >= *top {
+					domainsForLevel = domainsForLevel[:*top]
+				}
+				topDomainsPerLevelFiltered[i] = domainsForLevel
+			}
+		}
+
+		maxLevel := 0
+		for level := range topDomainsPerLevelFiltered {
+			if level > maxLevel {
+				maxLevel = level
+			}
+		}
+
+		if strings.Contains(*filterLevel, ":") {
+			if strings.HasSuffix(*filterLevel, ":") {
+				lvl, err := strconv.Atoi(strings.TrimSuffix(*filterLevel, ":"))
+				if err != nil {
+					check(err)
+				}
+				maxLevel = lvl
+			} else {
+				split := strings.Split(*filterLevel, ":")
+				lvl, err := strconv.Atoi(split[len(split)-1])
+				if err != nil {
+					check(err)
+				}
+				maxLevel = lvl - 1
+			}
+			filteredDomains := make([]string, 0)
+			for _, inputURL := range inputUrls {
+				for _, d := range topDomainsPerLevelFiltered[maxLevel] {
+					if strings.HasSuffix(inputURL, d) {
+						filteredDomains = append(filteredDomains, inputURL)
+						fmt.Println(inputURL)
+					}
+				}
+			}
+			domains = filteredDomains
+		} else {
+			for _, d := range topDomainsPerLevelFiltered[maxLevel] {
+				fmt.Println(d)
+			}
+			domains = topDomainsPerLevelFiltered[maxLevel]
 		}
 	}
 
