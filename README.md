@@ -38,10 +38,7 @@ Usage of dsieve.go
         Input file path, one url/domain per line.
   -o string
         Output file path, optional
-  -t    Filter invalid domains according to Mozilla's publicsuffix list. (default true)
   -top int
         Only consider top X subdomains of a certain level and return all their subdomains
 
 ```
-
-
