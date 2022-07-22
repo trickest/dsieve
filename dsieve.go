@@ -140,10 +140,14 @@ func main() {
 		"  \033[3m-f 2:4\033[0m    baz.tld, bar.baz.tld\n"+
 		"  \033[3m-f :3 \033[0m    tld, baz.tld")
 	outputFilePath = flag.String("o", "", "Output file path, optional")
-	filterTLD = flag.Bool("t", true, "Filter invalid domains according to Mozilla's publicsuffix list.")
+	//filterTLD = flag.Bool("t", true, "Filter invalid domains according to Mozilla's publicsuffix list.")
 	top = flag.Int("top", 0, "Only consider top X subdomains of a certain level and return all their subdomains")
 
 	flag.Parse()
+
+	// set filterTLD to true by default while removing the flag
+	t := true
+	filterTLD = &t
 
 	inputUrls := make([]string, 0)
 	if *inputUrl != "" {
