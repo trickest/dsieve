@@ -45,7 +45,7 @@ func parseFilter(filter string) (int, int) {
 	minMax := strings.Split(filter, ":")
 	if len(minMax) == 1 {
 		vMin, err = strconv.Atoi(minMax[0])
-		vMax = vMin + 1
+		vMax = vMin
 		check(err)
 	} else if len(minMax) == 2 {
 		if minMax[0] != "" {
@@ -111,7 +111,7 @@ func parseUrl(rawUrl string, lMin, lMax int) []string {
 		if lMax == -1 || lMax > len(domainLevels) {
 			lMax = len(domainLevels)
 		}
-		for i := lMax - 1; i > 0 && i >= lMin; i-- {
+		for i := lMax; i > 0 && i >= lMin; i-- {
 			domain := strings.Join(domainLevels[len(domainLevels)-i:], ".")
 			if domain != "" {
 				domains = append(domains, domain)
