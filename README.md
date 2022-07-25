@@ -1,4 +1,4 @@
-<h1 align="center">dsieve <a href="https://twitter.com/intent/tweet?text=dsieve%20-%20Make%20URL%20path%20combinations%20using%20a%20wordlist%20https%3A%2F%2Fgithub.com%2Ftrickest%2Fdsieve&hashtags=bugbounty,bugbountytips,infosec"><img src="https://img.shields.io/badge/Tweet--lightgrey?logo=twitter&style=social" alt="Tweet" height="20"/></a></h1>
+<h1 align="center">dsieve <a href="https://twitter.com/intent/tweet?text=dsieve%20-%20Filter%20and%20enrich%20a%20list%20of%20subdomains%20by%20level%20https%3A%2F%2Fgithub.com%2Ftrickest%2Fdsieve&hashtags=bugbounty,bugbountytips,infosec"><img src="https://img.shields.io/badge/Tweet--lightgrey?logo=twitter&style=social" alt="Tweet" height="20"/></a></h1>
 <h3 align="center">Filter and enrich a list of subdomains by level</h3>
 
 ![dsieve](dsieve.png "dsieve")
@@ -39,35 +39,61 @@ go install github.com/trickest/dsieve@latest
 ```
 
 ### Example
-##### wordlist.txt
+##### test.txt
 ```
-dev
-prod/
-admin.py
-app/login.html
+a.foo.target.com
+b.foo.target.com
+c.foo.target.com
+a.bar.target.com
+b.bar.target.com
+a.baz.target.com
 ```
 
 ```shell script
-$ dsieve -d example.com -l 2 -w wordlist.txt
-example.com/dev
-example.com/prod
-example.com/dev/dev
-example.com/prod/dev
-example.com/dev/prod
-example.com/prod/prod
-example.com/dev/admin.py
-example.com/dev/app/login.html
-example.com/prod/admin.py
-example.com/prod/app/login.html
-example.com/dev/dev/admin.py
-example.com/dev/dev/app/login.html
-example.com/prod/dev/admin.py
-example.com/prod/dev/app/login.html
-example.com/dev/prod/admin.py
-example.com/dev/prod/app/login.html
-example.com/prod/prod/admin.py
-example.com/prod/prod/app/login.html
+# All levels by default
+$ dsieve -if test.txt
+a.foo.target.com
+foo.target.com
+target.com
+b.foo.target.com
+c.foo.target.com
+a.bar.target.com
+bar.target.com
+b.bar.target.com
+a.baz.target.com
+baz.target.com
 
+# Level 2, the main domain
+$ dsieve -if test.txt -f 2
+target.com
+
+# Level 3, one level above the main domain
+$ dsieve -if test.txt -f 3
+foo.target.com
+bar.target.com
+baz.target.com
+
+# Levels 2 and above, main domain and all its subdomains
+$ dsieve -if test.txt -f 2:
+a.foo.target.com
+foo.target.com
+target.com
+b.foo.target.com
+c.foo.target.com
+a.bar.target.com
+bar.target.com
+b.bar.target.com
+a.baz.target.com
+baz.target.com
+
+# The top one level 3 subdomain with the highest number of sub-subdomains
+$ dsieve -if test.txt -f 3 -top 1
+foo.target.com
+
+# The top two level 3 subdomain with the highest number of sub-subdomains
+$ dsieve -if test.txt -f 3 -top 1
+foo.target.com
+bar.target.com
 ```
 
 # Report Bugs / Feedback
