@@ -91,7 +91,7 @@ $ dsieve -if test.txt -f 3 -top 1
 foo.target.com
 
 # The top two level 3 subdomain with the highest number of sub-subdomains
-$ dsieve -if test.txt -f 3 -top 1
+$ dsieve -if test.txt -f 3 -top 2
 foo.target.com
 bar.target.com
 ```
