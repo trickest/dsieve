@@ -38,6 +38,11 @@ go install github.com/trickest/dsieve@latest
     	Only consider top X subdomains of a certain level and return all their subdomains
 ```
 
+Domains can be passed through stdin as well.
+```
+cat domains.txt | dsieve -f 2
+```
+
 ### Example
 ##### test.txt
 ```
