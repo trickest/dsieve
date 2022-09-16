@@ -25,7 +25,7 @@ var (
 )
 
 func fail(text string) {
-	fmt.Println(text)
+	fmt.Fprintln(os.Stderr, text)
 	os.Exit(1)
 }
 
@@ -163,9 +163,29 @@ func main() {
 		}
 	}
 
+	// TODO: Consider program main execution to be in goroutine.
+	if *inputUrl == "" && *inputFilePath == "" {
+		// Let's get input from Stdin
+
+		// Check for stdin input
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) != 0 {
+			fmt.Fprintln(os.Stderr, "No domains detected. Hint: cat domains.txt | dsieve -f 2")
+			os.Exit(1)
+		}
+
+		sc := bufio.NewScanner(os.Stdin)
+
+		for sc.Scan() {
+			inputUrls = append(inputUrls, sc.Text())
+		}
+
+	}
+
+	// Leaving this in, for incase all/any input process gives un Zero URLs.
 	if len(inputUrls) == 0 {
 		flag.PrintDefaults()
-		fmt.Print("\nError: No input.\n")
+		fmt.Fprintln(os.Stderr, "\nError: No input.")
 		os.Exit(1)
 	}
 
