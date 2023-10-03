@@ -79,7 +79,7 @@ func writeResults(domains *[]string) {
 
 func parseUrl(rawUrl string, lMin, lMax int) []string {
 	domains := make([]string, 0)
-	if !strings.HasPrefix(rawUrl, "http") {
+	if !strings.HasPrefix(rawUrl, "http://") && !strings.HasPrefix(rawUrl, "https://") {
 		rawUrl = "http://" + rawUrl
 	}
 	u, err := url.Parse(rawUrl)
